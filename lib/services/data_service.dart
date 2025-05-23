@@ -27,7 +27,6 @@ class DataService extends ChangeNotifier {
   }
 
   void _initializeStepTracking() {
-    _stepsService.startTracking();
     _stepsService.stepsStream.listen((steps) {
       _totalSteps = steps;
       notifyListeners();

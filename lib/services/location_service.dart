@@ -60,8 +60,6 @@ class LocationService {
         distanceFilter: 10,
       ),
     ).listen(_onPositionUpdate);
-
-    _stepsService.startTracking();
   }
   
   Future<void> _checkPermissions() async {

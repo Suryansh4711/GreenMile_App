@@ -3,6 +3,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'package:provider/provider.dart';
+import '../services/data_service.dart';
+import '../services/location_service.dart';
+import '../models/trip_details.dart';
 
 class TrackPage extends StatefulWidget {
   const TrackPage({super.key});
@@ -15,7 +19,6 @@ class _TrackPageState extends State<TrackPage> {
   final Completer<GoogleMapController> _controller = Completer();
   final Set<Polyline> _polylines = {};
   final List<LatLng> _routePoints = [];
-  bool _isTracking = false;
   double _distance = 0;
   String _duration = "00:00:00";
   StreamSubscription<Position>? _positionStream;
@@ -31,6 +34,11 @@ class _TrackPageState extends State<TrackPage> {
     target: LatLng(0, 0),
     zoom: 15,
   );
+
+  bool _isTracking = false;
+  TransportMode? _selectedMode;
+  String _startLocation = '';
+  String _endLocation = '';
 
   @override
   void initState() {
@@ -140,10 +148,120 @@ class _TrackPageState extends State<TrackPage> {
     });
   }
 
-  void _stopTracking() {
+  void _stopTracking() async {
     _positionStream?.cancel();
     _timer?.cancel();
     setState(() => _isTracking = false);
+
+    // Get end location
+    final locationService = Provider.of<LocationService>(context, listen: false);
+    final endLoc = await locationService.getCurrentLocation(context);
+    _endLocation = endLoc['description'] ?? '';
+
+    // Calculate duration
+    final duration = DateTime.now().difference(_startTime!);
+    final intDuration = duration.inMinutes;
+
+    // Show transport mode selection
+    _showTransportModeDialog(intDuration);
+  }
+
+  void _showTransportModeDialog(int duration) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Transport Mode'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: TransportMode.values.map((mode) =>
+            ListTile(
+              leading: Icon(_getTransportIcon(mode)),
+              title: Text(_getTransportName(mode)),
+              onTap: () {
+                _selectedMode = mode;
+                _saveTrip(duration);
+                Navigator.pop(context);
+              },
+            ),
+          ).toList(),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveTrip(int duration) async {
+    if (_selectedMode == null) return;
+
+    // Calculate emissions
+    final emissions = _calculateEmissions(_selectedMode!, _distance);
+    
+    final co2Saved = _selectedMode == TransportMode.walking || 
+                     _selectedMode == TransportMode.cycling ? 
+                     (_distance / 1000) * 0.2 : 0.0; // 0.2 kg CO2 per km saved
+
+    final trip = TripDetails(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      date: _startTime ?? DateTime.now(),
+      distance: _distance / 1000, // Convert to kilometers
+      co2Saved: co2Saved,
+      startLocation: _startLocation,
+      endLocation: _endLocation,
+      duration: duration,
+      transportMode: _selectedMode!,
+      calories: _selectedMode == TransportMode.walking ? duration * 4 :
+               _selectedMode == TransportMode.cycling ? duration * 7 : 0.0,
+      averageSpeed: duration > 0 ? (_distance / 1000) / (duration / 60) : 0.0,
+      emissions: emissions,
+    );
+
+    final dataService = Provider.of<DataService>(context, listen: false);
+    await dataService.addTrip(trip);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Trip saved successfully!'),
+        backgroundColor: Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Map<String, double> _calculateEmissions(TransportMode mode, double distance) {
+    // Emission factors in g/km
+    final emissionFactors = {
+      TransportMode.car: {'co2': 120.0, 'nox': 0.4, 'so2': 0.1},
+      TransportMode.bus: {'co2': 80.0, 'nox': 0.3, 'so2': 0.08},
+      TransportMode.train: {'co2': 40.0, 'nox': 0.1, 'so2': 0.05},
+      TransportMode.walking: {'co2': 0.0, 'nox': 0.0, 'so2': 0.0},
+      TransportMode.cycling: {'co2': 0.0, 'nox': 0.0, 'so2': 0.0},
+    };
+
+    final factors = emissionFactors[mode] ?? {'co2': 0.0, 'nox': 0.0, 'so2': 0.0};
+    return {
+      'NOx': factors['nox']! * (distance / 1000), // Convert to km
+      'SO₂': factors['so2']! * (distance / 1000),
+    };
+  }
+
+  IconData _getTransportIcon(TransportMode mode) {
+    switch (mode) {
+      case TransportMode.walking:
+        return Icons.directions_walk;
+      case TransportMode.cycling:
+        return Icons.directions_bike;
+      case TransportMode.bus:
+        return Icons.directions_bus;
+      case TransportMode.train:
+        return Icons.train;
+      case TransportMode.car:
+        return Icons.directions_car;
+    }
+  }
+
+  String _getTransportName(TransportMode mode) {
+    return mode.toString().split('.').last[0].toUpperCase() +
+           mode.toString().split('.').last.substring(1);
   }
 
   String _formatDuration(Duration duration) {
@@ -270,7 +388,7 @@ class _TrackPageState extends State<TrackPage> {
         style: const TextStyle(color: Color.fromARGB(255, 17, 7, 7)),
       ),
       icon: Icon(_isTracking ? Icons.stop : Icons.play_arrow),
-      backgroundColor: _isTracking 
+      backgroundColor: _isTracking
           ? Colors.red.withOpacity(0.9)
           : Colors.green.withOpacity(0.9),
     );
