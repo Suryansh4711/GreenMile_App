@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../services/data_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:async';
-import 'package:pedometer/pedometer.dart';
 
 class StepsDetailsPage extends StatefulWidget {
   const StepsDetailsPage({super.key});
@@ -34,6 +33,14 @@ class _StepsDetailsPageState extends State<StepsDetailsPage> {
   void _setupRealTimeUpdates() {
     final dataService = Provider.of<DataService>(context, listen: false);
     
+    // Initialize with current steps
+    final currentSteps = dataService.totalSteps.toDouble();
+    final hour = DateTime.now().hour;
+    if (hour < _stepData.length) {
+      _stepData[hour] = FlSpot(hour.toDouble(), currentSteps);
+    }
+
+    // Listen to step updates
     _stepsSubscription = dataService.stepsStream.listen((steps) {
       if (mounted) {
         setState(() {
@@ -44,12 +51,6 @@ class _StepsDetailsPageState extends State<StepsDetailsPage> {
         });
       }
     });
-
-    // Initialize with current steps
-    _stepData[DateTime.now().hour] = FlSpot(
-      DateTime.now().hour.toDouble(),
-      dataService.totalSteps.toDouble(),
-    );
   }
 
   @override

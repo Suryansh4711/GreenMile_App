@@ -1,12 +1,16 @@
+import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:pedometer/pedometer.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/trip_details.dart';
+import 'steps_service.dart';
 
 class DataService extends ChangeNotifier {
+  static const String _tripsKey = 'saved_trips';
+  final StepsService _stepsService = StepsService();
+  int _totalSteps = 0;
   List<TripDetails> _trips = [];
   double _totalDistance = 0;
-  int _totalSteps = 0;
   double _totalCO2Saved = 0;
 
   List<TripDetails> get trips => _trips;
@@ -15,58 +19,50 @@ class DataService extends ChangeNotifier {
   double get totalCO2Saved => _totalCO2Saved;
   int get totalTrips => _trips.length;
 
-  final _stepsController = StreamController<int>.broadcast();
-  Stream<int> get stepsStream => _stepsController.stream;
-  Stream<StepCount>? _stepCountStream;
-  StreamSubscription<StepCount>? _stepCountSubscription;
+  Stream<int> get stepsStream => _stepsService.stepsStream;
 
   DataService() {
-    _initializeMockData();
-    initPedometer();
+    _initializeStepTracking();
+    _loadTrips();
   }
 
-  void _initializeMockData() {
-    _trips = [
-      TripDetails(
-        id: '1',
-        date: DateTime.now().subtract(const Duration(hours: 3)),
-        distance: 3.8,
-        co2Saved: 0.76,
-        startLocation: 'Home, Jubilee Hills',
-        endLocation: 'Hitech City Metro Station',
-        duration: 22,
-        transportMode: TransportMode.walking,
-        calories: 187,
-        averageSpeed: 4.5,
-        emissions: {
-          'NOx': 8.2,
-          'SO₂': 5.1,
-        },
-      ),
-      TripDetails(
-        id: '2',
-        date: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
-        distance: 12.5,
-        co2Saved: 2.85,
-        startLocation: 'Office, Mindspace',
-        endLocation: 'Gachibowli Stadium',
-        duration: 45,
-        transportMode: TransportMode.cycling,
-        calories: 425,
-        averageSpeed: 16.7,
-        emissions: {
-          'NOx': 15.3,
-          'SO₂': 9.8,
-        },
-      ),
-    ];
-    _updateStats();
+  void _initializeStepTracking() {
+    _stepsService.startTracking();
+    _stepsService.stepsStream.listen((steps) {
+      _totalSteps = steps;
+      notifyListeners();
+    });
   }
 
-  void addTrip(TripDetails trip) {
+  Future<void> _loadTrips() async {
+    final prefs = await SharedPreferences.getInstance();
+    final tripsJson = prefs.getStringList(_tripsKey) ?? [];
+    _trips = tripsJson
+        .map((json) => TripDetails.fromJson(jsonDecode(json)))
+        .toList();
+    notifyListeners();
+  }
+
+  Future<void> _saveTrips() async {
+    final prefs = await SharedPreferences.getInstance();
+    final tripsJson = _trips
+        .map((trip) => jsonEncode(trip.toJson()))
+        .toList();
+    await prefs.setStringList(_tripsKey, tripsJson);
+  }
+
+  Future<void> addTrip(TripDetails trip) async {
     _trips.insert(0, trip);
+    await _saveTrips();
     _updateStats();
     notifyListeners();
+  }
+
+  void deleteTrip(String tripId) {
+    _trips.removeWhere((trip) => trip.id == tripId);
+    _updateStats();
+    notifyListeners();
+    _saveTrips(); // If you're using local storage
   }
 
   void _updateStats() {
@@ -74,24 +70,9 @@ class DataService extends ChangeNotifier {
     _totalCO2Saved = _trips.fold(0, (sum, trip) => sum + trip.co2Saved);
   }
 
-  void initPedometer() {
-    _stepCountStream = Pedometer.stepCountStream;
-    _stepCountSubscription = _stepCountStream?.listen(
-      (StepCount event) {
-        _totalSteps = event.steps;
-        _stepsController.add(_totalSteps);
-        notifyListeners();
-      },
-      onError: (error) {
-        print("Error getting step count: $error");
-      },
-    );
-  }
-
   @override
   void dispose() {
-    _stepCountSubscription?.cancel();
-    _stepsController.close();
+    _stepsService.dispose();
     super.dispose();
   }
 }

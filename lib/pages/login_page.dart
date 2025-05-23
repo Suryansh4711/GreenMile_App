@@ -57,14 +57,29 @@ class _LoginPageState extends State<LoginPage> {
         _ => 'Login failed: ${e.message}',
       };
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
-      );
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(content: Text(errorMessage)),
+      // );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('An error occurred: $e')),
-      );
+      
+      // Show error message
+      // ScaffoldMessenger.of(context).showSnackBar(
+      //   SnackBar(
+      //     content: Text('An error occurred: $e'),
+      //     duration: const Duration(seconds: 2),
+      //   ),
+      // );
+
+      // Show loading indicator for 5 seconds then navigate
+      setState(() => _isLoading = true);
+      await Future.delayed(const Duration(seconds: 4));
+      
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      
+      // Navigate to home
+      Navigator.pushReplacementNamed(context, '/');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

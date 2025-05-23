@@ -1,289 +1,284 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/data_service.dart';
 import '../models/trip_details.dart';
-import '../services/trip_tracking_service.dart';
-import 'trip_detail_view.dart';
+import 'package:intl/intl.dart';
+import 'trip_detail_page.dart';
 
-class MyTripsPage extends StatefulWidget {
+class MyTripsPage extends StatelessWidget {
   const MyTripsPage({super.key});
 
   @override
-  State<MyTripsPage> createState() => _MyTripsPageState();
-}
-
-class _MyTripsPageState extends State<MyTripsPage> {
-  final TripTrackingService _trackingService = TripTrackingService();
-  late List<TripDetails> _trips;
-  double _currentDistance = 0;
-  int _currentDuration = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _setupTracking();
-    _trips = _getMockTrips(); // Initialize trips with mock data
-  }
-
-  void _setupTracking() {
-    _trackingService.distanceStream.listen((distance) {
-      setState(() => _currentDistance = distance);
-    });
-    _trackingService.durationStream.listen((duration) {
-      setState(() => _currentDuration = duration);
-    });
-  }
-
-  Widget _buildActiveTrip() {
-    if (!_trackingService.isTracking) return const SizedBox.shrink();
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      color: Colors.green[50],
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Active Trip',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildStatItem('Distance', '${(_currentDistance / 1000).toStringAsFixed(2)} km'),
-                _buildStatItem('Duration', '${(_currentDuration ~/ 60).toString()} mins'),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Center(
-              child: ElevatedButton(
-                onPressed: _stopTrip,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Stop Trip'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.black54,
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _startTrip() async {
-    await _trackingService.startTrip();
-    setState(() {});
-  }
-
-  Future<void> _stopTrip() async {
-    final tripDetails = await _trackingService.stopTrip();
-    setState(() {
-      _trips.insert(0, tripDetails);
-    });
-  }
-
-  List<TripDetails> _getMockTrips() {
-    return [
-      TripDetails(
-        id: '1',
-        date: DateTime.now().subtract(const Duration(hours: 3)),
-        distance: 3.8,
-        co2Saved: 0.76,
-        startLocation: 'Home, Jubilee Hills',
-        endLocation: 'Hitech City Metro Station',
-        duration: 22,
-        transportMode: TransportMode.walking,
-        calories: 187,
-        averageSpeed: 4.5,
-        emissions: {
-          'NOx': 8.2,
-          'SO₂': 5.1,
-        },
-      ),
-      TripDetails(
-        id: '2',
-        date: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
-        distance: 12.5,
-        co2Saved: 2.85,
-        startLocation: 'Office, Mindspace',
-        endLocation: 'Gachibowli Stadium',
-        duration: 45,
-        transportMode: TransportMode.cycling,
-        calories: 425,
-        averageSpeed: 16.7,
-        emissions: {
-          'NOx': 15.3,
-          'SO₂': 9.8,
-        },
-      ),
-    ];
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final trips = _getMockTrips();
-    
     return Scaffold(
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      appBar: AppBar(
+        title: const Text(
+          'My Trips',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        backgroundColor: const Color(0xFF00C853),
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF00C853),
+              Color(0xFF1B5E20),
+            ],
+          ),
+        ),
+        child: Consumer<DataService>(
+          builder: (context, dataService, child) {
+            final trips = dataService.trips;
+            if (trips.isEmpty) {
+              return _buildEmptyState();
+            }
+            return _buildTripsList(trips);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (!_trackingService.isTracking)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 16),
-              child: ElevatedButton(
-                onPressed: _startTrip,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                ),
-                child: const Text('Start New Trip'),
-              ),
-            ),
-          _buildActiveTrip(),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Text(
-              'Recent Trips',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+          Icon(
+            Icons.directions_car_outlined,
+            size: 80,
+            color: Colors.white.withOpacity(0.6),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No trips yet',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          ...trips.map((trip) => Card(
-            margin: const EdgeInsets.only(bottom: 16),
-            child: ListTile(
-              contentPadding: const EdgeInsets.all(16),
-              leading: Icon(
-                _getTransportModeIcon(trip.transportMode),
-                size: 32,
-                color: Colors.green[700],
-              ),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${trip.startLocation} → ${trip.endLocation}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Colors.black,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDateTime(trip.date),
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '${trip.distance.toStringAsFixed(1)} km',
-                      style: const TextStyle(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      '${trip.duration} mins',
-                      style: const TextStyle(
-                        color: Colors.black87,
-                      ),
-                    ),
-                    Text(
-                      'CO₂: -${trip.co2Saved.toStringAsFixed(1)}kg',
-                      style: TextStyle(
-                        color: Colors.green[700],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TripDetailView(trip: trip),
-                  ),
-                );
-              },
+          const SizedBox(height: 8),
+          Text(
+            'Add your first trip to start tracking',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 16,
             ),
-          )).toList(),
+          ),
         ],
       ),
     );
   }
 
-  IconData _getTransportModeIcon(TransportMode mode) {
+  Widget _buildTripsList(List<TripDetails> trips) {
+    return ListView.builder(
+      itemCount: trips.length,
+      padding: const EdgeInsets.all(16),
+      itemBuilder: (context, index) {
+        final trip = trips[index];
+        return _buildTripCard(context, trip); // Pass context here
+      },
+    );
+  }
+
+  Widget _buildTripCard(BuildContext context, TripDetails trip) {
+    return Hero(
+      tag: 'trip-${trip.id}',
+      child: Dismissible(
+        key: Key(trip.id),
+        background: Container(
+          color: Colors.red,
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (direction) async {
+          return await showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: const Text('Confirm Delete'),
+                content: const Text('Are you sure you want to delete this trip?'),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+        onDismissed: (direction) {
+          final dataService = Provider.of<DataService>(context, listen: false);
+          dataService.deleteTrip(trip.id);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Trip deleted'),
+              duration: const Duration(seconds: 2), // Set duration to 2 seconds
+              action: SnackBarAction(
+                label: 'Undo',
+                onPressed: () {
+                  dataService.addTrip(trip);
+                },
+              ),
+            ),
+          );
+        },
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          elevation: 8,
+          shadowColor: Colors.black26,
+          color: Colors.white.withOpacity(0.9),
+          child: InkWell(
+            onTap: () => Navigator.push(
+              context, // Now context is available
+              MaterialPageRoute(
+                builder: (context) => TripDetailPage(trip: trip),
+              ),
+            ),
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _buildTransportIcon(trip.transportMode),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              DateFormat('MMM d, y').format(trip.date),
+                              style: const TextStyle(
+                                color: Colors.black54,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${trip.startLocation} → ${trip.endLocation}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: Color(0xFF1B5E20),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      _buildStat(
+                        Icons.straighten,
+                        '${trip.distance.toStringAsFixed(1)} km',
+                        'Distance',
+                      ),
+                      _buildStat(
+                        Icons.timer_outlined,
+                        '${trip.duration} min',
+                        'Duration',
+                      ),
+                      _buildStat(
+                        Icons.eco,
+                        '${trip.co2Saved.toStringAsFixed(1)} kg',
+                        'CO₂ Saved',
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTransportIcon(TransportMode mode) {
+    final IconData icon;
+    final Color color;
+
     switch (mode) {
       case TransportMode.walking:
-        return Icons.directions_walk;
+        icon = Icons.directions_walk;
+        color = Colors.blue;
+        break;
       case TransportMode.cycling:
-        return Icons.directions_bike;
+        icon = Icons.directions_bike;
+        color = Colors.green;
+        break;
       case TransportMode.bus:
-        return Icons.directions_bus;
+        icon = Icons.directions_bus;
+        color = Colors.amber;
+        break;
       case TransportMode.train:
-        return Icons.train;
+        icon = Icons.train;
+        color = Colors.red;
+        break;
       case TransportMode.car:
-        return Icons.directions_car;
+        icon = Icons.directions_car;
+        color = Colors.purple;
+        break;
     }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: color, size: 24),
+    );
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays == 0) {
-      return 'Today ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-    } else {
-      return '${dateTime.day}/${dateTime.month}/${dateTime.year}';
-    }
-  }
-
-  @override
-  void dispose() {
-    _trackingService.dispose();
-    super.dispose();
+  Widget _buildStat(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Icon(icon, color: const Color(0xFF1B5E20), size: 20),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Color(0xFF1B5E20),
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.black54,
+          ),
+        ),
+      ],
+    );
   }
 }

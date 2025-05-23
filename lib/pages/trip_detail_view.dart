@@ -174,8 +174,8 @@ class TripDetailView extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.grey[600],
+          style: const TextStyle(
+            color: Colors.black87,
             fontSize: 14,
           ),
         ),
@@ -224,8 +224,8 @@ class TripDetailView extends StatelessWidget {
       children: [
         Text(
           label,
-          style: TextStyle(
-            color: Colors.grey[600],
+          style: const TextStyle(
+            color: Colors.black87,
             fontSize: 14,
           ),
         ),

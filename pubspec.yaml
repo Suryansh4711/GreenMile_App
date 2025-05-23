@@ -19,11 +19,13 @@ dependencies:
   image_picker: ^1.0.4
   path: ^1.8.3
   geolocator: ^10.1.0
-  pedometer: ^3.0.0
   shared_preferences: ^2.2.2
   provider: ^6.0.5
   google_maps_flutter: ^2.5.0
   fl_chart: ^0.66.0
+  sensors_plus: ^3.1.0
+  intl: ^0.18.1
+  http: ^1.1.0
 
 dev_dependencies:
   flutter_test:

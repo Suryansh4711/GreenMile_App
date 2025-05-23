@@ -20,6 +20,7 @@ import 'models/trip_details.dart';
 import 'pages/trip_detail_view.dart';
 import 'widgets/animated_stat_card.dart';
 import 'pages/steps_details_page.dart'; // Import StepsDetailsPage
+import 'pages/add_trip_page.dart'; // Import AddTripPage
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -146,7 +147,8 @@ class _HomePageState extends State<HomePage> {
         currentSteps: _currentSteps,
         currentDistance: _currentDistance,
       ),
-      const MyTripsPage(),  // Replace Center widget with MyTripsPage
+      const MyTripsPage(),
+      const AddTripPage(),  // Add new page
       const TrackPage(),
       const RewardsPage(),
       const ChallengesPage(),
@@ -392,13 +394,14 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   _buildDrawerItem(Icons.home_outlined, 'Home', 0),
                   _buildDrawerItem(Icons.directions_car_outlined, 'My Trips', 1),
-                  _buildDrawerItem(Icons.map_outlined, 'Track', 2),
-                  _buildDrawerItem(Icons.card_giftcard, 'Rewards', 3),
-                  _buildDrawerItem(Icons.emoji_events_outlined, 'Challenges', 4),
-                  _buildDrawerItem(Icons.document_scanner, 'Scan', 5),  // Add OCR item
-                  _buildDrawerItem(Icons.person_outline, 'Profile', 6),
+                  _buildDrawerItem(Icons.add_location_alt, 'Add Trip', 2),  // New item
+                  _buildDrawerItem(Icons.map_outlined, 'Track', 3),
+                  _buildDrawerItem(Icons.card_giftcard, 'Rewards', 4),
+                  _buildDrawerItem(Icons.emoji_events_outlined, 'Challenges', 5),
+                  _buildDrawerItem(Icons.document_scanner, 'Scan', 6),  // Add OCR item
+                  _buildDrawerItem(Icons.person_outline, 'Profile', 7),
                   const Divider(),
-                  _buildDrawerItem(Icons.settings, 'Settings', 7),
+                  _buildDrawerItem(Icons.settings, 'Settings', 8),
                   if (currentUser != null)
                     ListTile(
                       leading: const Icon(Icons.logout),
