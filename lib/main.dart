@@ -8,6 +8,7 @@ import 'services/auth_service.dart';
 import 'services/ocr_service.dart';
 import 'services/location_service.dart';
 import 'services/data_service.dart';
+import 'services/profile_service.dart'; // Import ProfileService
 import 'models/emission_result.dart';
 import 'pages/challenges_page.dart';
 import 'pages/rewards_page.dart';
@@ -28,9 +29,15 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
+  final dataService = DataService();
+  final profileService = ProfileService();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => DataService(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => dataService),
+        ChangeNotifierProvider(create: (_) => profileService),
+      ],
       child: const MyApp(),
     ),
   );

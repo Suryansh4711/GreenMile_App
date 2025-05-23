@@ -1,67 +1,117 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'login_page.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../services/profile_service.dart';
+import '../pages/settings_page.dart';
+import '../pages/help_support_page.dart';
+import '../services/auth_service.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  Widget _buildStatCard(String title, String value, IconData icon, ThemeData theme) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(icon, size: 24, color: theme.colorScheme.primary),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            Text(
-              title,
-              style: const TextStyle(color: Colors.black54),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final ImagePicker _picker = ImagePicker();
+  final AuthService _authService = AuthService();
+  String? _imagePath;
+  String _userName = 'User Name';
+  bool _isEditing = false;
+  final _nameController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
   }
 
-  Widget _buildGuestView(BuildContext context, ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const CircleAvatar(
-            radius: 50,
-            backgroundColor: Colors.grey,
-            child: Icon(Icons.person_outline, size: 50, color: Colors.white),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Guest User',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const LoginPage()),
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _imagePath = prefs.getString('profile_image');
+      _userName = prefs.getString('user_name') ?? 'User Name';
+      _nameController.text = _userName;
+    });
+  }
+
+  Future<void> _saveUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('user_name', _userName);
+    if (_imagePath != null) {
+      await prefs.setString('profile_image', _imagePath!);
+    }
+  }
+
+  void _handleNameUpdate() {
+    if (_nameController.text.isNotEmpty) {
+      final profileService = Provider.of<ProfileService>(context, listen: false);
+      profileService.updateName(_nameController.text);
+      setState(() {
+        _userName = _nameController.text;
+        _isEditing = false;
+      });
+    }
+  }
+
+  Future<void> _handleImagePick() async {
+    try {
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        final profileService = Provider.of<ProfileService>(context, listen: false);
+        await profileService.updateProfileImage(image.path);
+        setState(() {
+          _imagePath = image.path;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to pick image')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profileService = Provider.of<ProfileService>(context);
+    _userName = profileService.userName;
+    _imagePath = profileService.profileImagePath;
+
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 200,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(_userName),
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xFF00C853), Color(0xFF1B5E20)],
+                  ),
+                ),
+              ),
             ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-            ),
-            child: const Text(
-              'Sign In',
-              style: TextStyle(fontSize: 16, color: Colors.white),
+          ),
+          SliverToBoxAdapter(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                _buildProfileImage(),
+                const SizedBox(height: 20),
+                _buildNameSection(),
+                const SizedBox(height: 20),
+                _buildStatsSection(),
+                const SizedBox(height: 20),
+                _buildActionButtons(),
+              ],
             ),
           ),
         ],
@@ -69,87 +119,163 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildUserProfile(BuildContext context, User user, ThemeData theme) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-            ),
-            child: Column(
+  Widget _buildProfileImage() {
+    return Stack(
+      alignment: Alignment.bottomRight,
+      children: [
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: const Color(0xFF00C853), width: 3),
+            image: _imagePath != null
+                ? DecorationImage(
+                    image: FileImage(File(_imagePath!)),
+                    fit: BoxFit.cover,
+                  )
+                : null,
+          ),
+          child: _imagePath == null
+              ? const Icon(Icons.person, size: 80, color: Color(0xFF00C853))
+              : null,
+        ),
+        FloatingActionButton.small(
+          onPressed: _handleImagePick,
+          child: const Icon(Icons.camera_alt),
+          backgroundColor: const Color(0xFF00C853),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNameSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: _isEditing
+          ? Row(
               children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  backgroundImage: user.photoURL != null ? NetworkImage(user.photoURL!) : null,
-                  child: user.photoURL == null
-                      ? Text(
-                          user.displayName?[0].toUpperCase() ?? user.email![0].toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 32,
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        )
-                      : null,
+                Expanded(
+                  child: TextField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: 16),
+                IconButton(
+                  icon: const Icon(Icons.check),
+                  onPressed: _handleNameUpdate,
+                ),
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 Text(
-                  user.displayName ?? user.email ?? 'User',
+                  _userName,
                   style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
                   ),
                 ),
-                Text(
-                  'Green Warrior',
-                  style: TextStyle(
-                    color: theme.colorScheme.primary,
-                    fontWeight: FontWeight.w500,
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () => setState(() => _isEditing = true),
                 ),
               ],
             ),
+    );
+  }
+
+  Widget _buildStatsSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 5,
+            blurRadius: 7,
+            offset: const Offset(0, 3),
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 3,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              children: [
-                _buildStatCard('Total Trips', '156', Icons.directions_car, theme),
-                _buildStatCard('CO₂ Saved', '423kg', Icons.eco, theme),
-                _buildStatCard('Green Score', '92', Icons.stars, theme),
-              ],
-            ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatItem('Total Trips', '0'),
+          _buildStatItem('CO₂ Saved', '0 kg'),
+          _buildStatItem('Distance', '0 km'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF00C853),
           ),
-          const Divider(),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: [
           ListTile(
-            title: const Text('Account Settings'),
-            leading: const Icon(Icons.settings),
+            leading: const Icon(Icons.settings, color: Color(0xFF00C853)),
+            title: const Text('Settings'),
             trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              Navigator.pushNamed(context, '/settings');
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const SettingsPage()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.help_outline, color: Color(0xFF00C853)),
+            title: const Text('Help & Support'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HelpSupportPage()),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout'),
+            onTap: () async {
+              try {
+                await _authService.signOut(context);
+                if (!mounted) return;
+                Navigator.pushReplacementNamed(context, '/');
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error logging out: $e')),
+                );
+              }
             },
-          ),
-          ListTile(
-            title: const Text('My Achievements'),
-            leading: const Icon(Icons.emoji_events),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
-          ),
-          ListTile(
-            title: const Text('Trip History'),
-            leading: const Icon(Icons.history),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {},
           ),
         ],
       ),
@@ -157,18 +283,8 @@ class ProfilePage extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final user = FirebaseAuth.instance.currentUser;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        centerTitle: true,
-      ),
-      body: user != null
-          ? _buildUserProfile(context, user, theme)
-          : _buildGuestView(context, theme),
-    );
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
   }
 }
