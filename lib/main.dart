@@ -22,6 +22,8 @@ import 'pages/trip_detail_view.dart';
 import 'widgets/animated_stat_card.dart';
 import 'pages/steps_details_page.dart'; // Import StepsDetailsPage
 import 'pages/add_trip_page.dart'; // Import AddTripPage
+import 'widgets/auth_wrapper.dart';
+import 'pages/aviator_game_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,7 +78,7 @@ class MyApp extends StatelessWidget {
           bodyMedium: TextStyle(color: Colors.white70),
         ),
       ),
-      home: const HomePage(),
+      home: const AuthWrapper(),
     );
   }
 }
@@ -155,11 +157,12 @@ class _HomePageState extends State<HomePage> {
         currentDistance: _currentDistance,
       ),
       const MyTripsPage(),
-      const AddTripPage(),  // Add new page
+      const AddTripPage(),
       const TrackPage(),
       const RewardsPage(),
       const ChallengesPage(),
-      const OcrPage(),  // Add OCR page
+      const OcrPage(),
+      const AviatorGamePage(), // Add game page
       const ProfilePage(),
       const SettingsPage(),
     ];
@@ -213,7 +216,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showResultDialog(EmissionResult result) {
-    final textStyle = const TextStyle(
+    const textStyle = TextStyle(
       color: Colors.black87,
       fontSize: 16,
     );
@@ -364,13 +367,13 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF1B5E20),  // Dark green
-                    const Color(0xFF2E7D32),  // Medium dark green
+                    Color(0xFF1B5E20),  // Dark green
+                    Color(0xFF2E7D32),  // Medium dark green
                   ],
                 ),
               ),
@@ -401,14 +404,15 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   _buildDrawerItem(Icons.home_outlined, 'Home', 0),
                   _buildDrawerItem(Icons.directions_car_outlined, 'My Trips', 1),
-                  _buildDrawerItem(Icons.add_location_alt, 'Add Trip', 2),  // New item
+                  _buildDrawerItem(Icons.add_location_alt, 'Add Trip', 2),
                   _buildDrawerItem(Icons.map_outlined, 'Track', 3),
                   _buildDrawerItem(Icons.card_giftcard, 'Rewards', 4),
                   _buildDrawerItem(Icons.emoji_events_outlined, 'Challenges', 5),
-                  _buildDrawerItem(Icons.document_scanner, 'Scan', 6),  // Add OCR item
-                  _buildDrawerItem(Icons.person_outline, 'Profile', 7),
+                  _buildDrawerItem(Icons.document_scanner, 'Scan', 6),
+                  _buildDrawerItem(Icons.games, 'Eco Aviator', 7), // Add game option
+                  _buildDrawerItem(Icons.person_outline, 'Profile', 8),
                   const Divider(),
-                  _buildDrawerItem(Icons.settings, 'Settings', 8),
+                  _buildDrawerItem(Icons.settings, 'Settings', 9),
                   if (currentUser != null)
                     ListTile(
                       leading: const Icon(Icons.logout),
@@ -425,13 +429,13 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              const Color.fromARGB(255, 15, 35, 17), // Darker surface
-              const Color.fromARGB(255, 25, 55, 28), // Darker surface container
+              Color.fromARGB(255, 15, 35, 17), // Darker surface
+              Color.fromARGB(255, 25, 55, 28), // Darker surface container
             ],
           ),
         ),

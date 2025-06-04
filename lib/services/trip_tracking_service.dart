@@ -3,9 +3,9 @@ import 'package:geolocator/geolocator.dart';
 import '../models/trip_details.dart';
 
 class TripTrackingService {
-  StreamController<Position> _locationController = StreamController<Position>.broadcast();
-  StreamController<double> _distanceController = StreamController<double>.broadcast();
-  StreamController<int> _durationController = StreamController<int>.broadcast();
+  final StreamController<Position> _locationController = StreamController<Position>.broadcast();
+  final StreamController<double> _distanceController = StreamController<double>.broadcast();
+  final StreamController<int> _durationController = StreamController<int>.broadcast();
   
   bool _isTracking = false;
   Timer? _durationTimer;

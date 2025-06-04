@@ -114,15 +114,15 @@ class _SettingsPageState extends State<SettingsPage>
           // About Tab
           ListView(
             children: [
-              ListTile(
-                title: const Text('Version', style: textStyle),
-                subtitle: const Text('1.0.0', style: subtitleStyle),
-                leading: const Icon(Icons.info, color: Colors.white),
+              const ListTile(
+                title: Text('Version', style: textStyle),
+                subtitle: Text('1.0.0', style: subtitleStyle),
+                leading: Icon(Icons.info, color: Colors.white),
               ),
-              ListTile(
-                title: const Text('Developer', style: textStyle),
-                subtitle: const Text('GreenMile Team', style: subtitleStyle),
-                leading: const Icon(Icons.code, color: Colors.white),
+              const ListTile(
+                title: Text('Developer', style: textStyle),
+                subtitle: Text('GreenMile Team', style: subtitleStyle),
+                leading: Icon(Icons.code, color: Colors.white),
               ),
               const Divider(),
               ListTile(

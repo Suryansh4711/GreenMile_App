@@ -1,4 +1,6 @@
 import UIKit
+import Foundation
+import UIKit.UIApplication
 import Flutter
 import GoogleMaps
 

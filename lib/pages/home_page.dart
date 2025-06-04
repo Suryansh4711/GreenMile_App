@@ -229,7 +229,7 @@ class _HomeContentState extends State<HomeContent> with SingleTickerProviderStat
       child: Column(
         children: [
           _buildRecentActivityHeader(),
-          ...dataService.trips.take(3).map((trip) => _buildTripItem(trip)).toList(),
+          ...dataService.trips.take(3).map((trip) => _buildTripItem(trip)),
         ],
       ),
     );

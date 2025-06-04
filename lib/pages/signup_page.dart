@@ -40,22 +40,33 @@ class _SignUpPageState extends State<SignUpPage> {
     setState(() => _isLoading = true);
 
     try {
-      print('Attempting signup for email: ${_emailController.text}'); // Debug print
+      print('Attempting signup for email: ${_emailController.text}');
       
       final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
       
-      print('Signup successful: ${userCredential.user?.uid}'); // Debug print
-      
       if (mounted && userCredential.user != null) {
+        // Show loading for 3 seconds
+        await Future.delayed(const Duration(seconds: 3));
+        
+        if (!mounted) return;
+
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created successfully! You can now login.')),
+          const SnackBar(
+            content: Text('Signup successful!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
         );
+
+        // Wait for snackbar to show before navigation
+        await Future.delayed(const Duration(seconds: 1));
         
-        // Navigate back to login page instead of HomePage
+        if (!mounted) return;
+        // Navigate back to login page
         Navigator.pop(context);
       }
     } on FirebaseAuthException catch (e) {
@@ -74,9 +85,9 @@ class _SignUpPageState extends State<SignUpPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('An error occurred: $e')),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(content: Text('An error occurred: $e')),
+        // );
       }
     } finally {
       if (mounted) {

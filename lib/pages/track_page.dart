@@ -37,7 +37,7 @@ class _TrackPageState extends State<TrackPage> {
 
   bool _isTracking = false;
   TransportMode? _selectedMode;
-  String _startLocation = '';
+  final String _startLocation = '';
   String _endLocation = '';
 
   @override

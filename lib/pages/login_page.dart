@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+// import '../widgets/home_content.dart';  // Add this import
 import '../services/auth_service.dart';
 import 'signup_page.dart';
+import 'home_page.dart'; // Import HomePage
 
 class LoginPage extends StatefulWidget {
   final VoidCallback? onLoginSuccess;
@@ -43,8 +45,14 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       
       if (user != null) {
-        widget.onLoginSuccess?.call();  // Call success callback if provided
-        Navigator.pop(context);  // Return to previous screen
+        // Replace current route with home screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeContent(
+            currentSteps: 0,
+            currentDistance: 0.0,
+          )),
+        );
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -89,97 +97,97 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
+    return WillPopScope(
+      onWillPop: () async => false, // Prevent back navigation
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false, // Remove back button
         ),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF1B5E20),
-              Color(0xFF2E7D32),
-              Color(0xFF388E3C),
-            ],
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF1B5E20),
+                Color(0xFF2E7D32),
+                Color(0xFF388E3C),
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Logo and title
-                  Image.asset(
-                    'assets/removed_bg_logo.png',
-                    height: 120,
-                    fit: BoxFit.contain,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(height: 20),
-                  ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Colors.white, Colors.white70],
-                    ).createShader(bounds),
-                    child: const Text(
-                      'GreenMiles',
-                      style: TextStyle(
-                        fontSize: 45,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+          child: SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo and title
+                    Image.asset(
+                      'assets/removed_bg_logo.png',
+                      height: 120,
+                      fit: BoxFit.contain,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 20),
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Colors.white, Colors.white70],
+                      ).createShader(bounds),
+                      child: const Text(
+                        'GreenMiles',
+                        style: TextStyle(
+                          fontSize: 45,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 50),
-                  // Login form
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      children: [
-                        _buildTextField(
-                          controller: _emailController,
-                          hint: 'Email',
-                          icon: Icons.email,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _passwordController,
-                          hint: 'Password',
-                          icon: Icons.lock,
-                          isPassword: true,
-                        ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              // Handle forgot password
-                            },
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(color: Colors.white70),
+                    const SizedBox(height: 50),
+                    // Login form
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          _buildTextField(
+                            controller: _emailController,
+                            hint: 'Email',
+                            icon: Icons.email,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _passwordController,
+                            hint: 'Password',
+                            icon: Icons.lock,
+                            isPassword: true,
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                // Handle forgot password
+                              },
+                              child: const Text(
+                                'Forgot Password?',
+                                style: TextStyle(color: Colors.white70),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        _buildLoginButton(),
-                        const SizedBox(height: 16),
-                        _buildSignUpButton(context),
-                      ],
+                          const SizedBox(height: 24),
+                          _buildLoginButton(),
+                          const SizedBox(height: 16),
+                          _buildSignUpButton(context),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

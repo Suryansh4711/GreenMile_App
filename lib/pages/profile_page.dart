@@ -142,8 +142,8 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         FloatingActionButton.small(
           onPressed: _handleImagePick,
-          child: const Icon(Icons.camera_alt),
           backgroundColor: const Color(0xFF00C853),
+          child: const Icon(Icons.camera_alt),
         ),
       ],
     );

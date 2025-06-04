@@ -85,13 +85,13 @@ class ChallengesPage extends StatelessWidget {
             width: 24,
             height: 24,
             decoration: BoxDecoration(
-              color: rank <= 3 ? theme.colorScheme.primary : theme.colorScheme.surfaceVariant,
+              color: rank <= 3 ? theme.colorScheme.primary : theme.colorScheme.surfaceContainerHighest,
               shape: BoxShape.circle,
             ),
             child: Center(
               child: Text(
                 rank.toString(),
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
